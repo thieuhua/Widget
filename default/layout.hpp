@@ -257,15 +257,18 @@ public:
     bool wrap = true;
 
     Size measure(Widget* widget, const LayoutConstraints& c) override {
+
         double x = 0, y = 0, maxHeightLine = 0;
         double totalW = 0, totalH = 0;
+        double width = clampDouble(widget->rect.w, c.minW, c.maxW);
+        LOG("FlowLayout measure with Width:" << width);
 
         for (auto &childPtr : widget->children) {
             Widget* child = childPtr.get();
-            Size s = child->layout ? child->layout->measure(child, LayoutConstraints::Unbounded()) : child->measure(LayoutConstraints::Unbounded());
+            Size s =child->measure(LayoutConstraints::Unbounded());
 
-            if (wrap && x + s.w > c.maxW) {
-                x = 0;
+            if (wrap && x + s.w > width) {
+                x = spacing;
                 y += maxHeightLine + lineSpacing;
                 maxHeightLine = 0;
             }
@@ -274,26 +277,29 @@ public:
             totalW = std::max(totalW, x);
             totalH = y + maxHeightLine;
         }
+        totalH += lineSpacing; // bottom spacing
+        LOG("FlowLayout measure totalW:" << totalW << " totalH:" << totalH);
         return { clampDouble(totalW, c.minW, c.maxW), clampDouble(totalH, c.minH, c.maxH) };
     }
 
     void arrange(Widget* widget, const Rect& bounds) override {
-        double x = bounds.x, y = bounds.y;
+        LOG("FlowLayout arrange in bounds x:" << bounds.x << " y:" << bounds.y << " w:" << bounds.w << " h:" << bounds.h);
+        double x = spacing, y = lineSpacing;
         double lineHeight = 0;
 
         for (auto &childPtr : widget->children) {
             Widget* child = childPtr.get();
-            Size s = child->layout ? child->layout->measure(child, LayoutConstraints::Unbounded()) : child->measure(LayoutConstraints::Unbounded());
+            Size s = childPtr->meansureSize;
 
-            if (wrap && x + s.w > bounds.x + bounds.w) {
-                x = bounds.x;
+            if (wrap && x + s.w > bounds.w) {
+                x = spacing;
                 y += lineHeight + lineSpacing;
                 lineHeight = 0;
             }
 
+
             Rect r { x, y, s.w, s.h };
-            if (child->layout) child->layout->arrange(child, r);
-            else child->arrange(r);
+            child->arrange(r);
 
             x += s.w + spacing;
             lineHeight = std::max(lineHeight, s.h);
@@ -311,23 +317,25 @@ public:
         double w = 0, h = 0;
         for (auto &childPtr : widget->children) {
             Widget* child = childPtr.get();
-            Size s = child->layout ? child->layout->measure(child, LayoutConstraints::Unbounded()) : child->measure(LayoutConstraints::Unbounded());
+            Size s = child->measure(LayoutConstraints::Unbounded());
             w = std::max(w, child->rect.x + s.w);
             h = std::max(h, child->rect.y + s.h);
         }
+        LOG("AbsoluteLayout measure w:" << w << " h:" << h);
         return { clampDouble(w, c.minW, c.maxW), clampDouble(h, c.minH, c.maxH) };
     }
 
     void arrange(Widget* widget, const Rect& bounds) override {
+        LOG("AbsoluteLayout arrange in bounds x:" << bounds.x << " y:" << bounds.y << " w:" << bounds.w << " h:" << bounds.h);
         widget->rect = bounds;
         for (auto &childPtr : widget->children) {
             Widget* child = childPtr.get();
             // absolute positions, just add parent offset
             Rect r = child->rect;
-            r.x += bounds.x;
-            r.y += bounds.y;
-            if (child->layout) child->layout->arrange(child, r);
-            else child->arrange(r);
+            LOG("  arranging child at x:" << r.x << " y:" << r.y << " w:" << r.w << " h:" << r.h);
+            r.w = std::min(r.w, bounds.w - r.x);
+            r.h = std::min(r.h, bounds.h - r.y);
+            child->arrange(r);
         }
     }
 };

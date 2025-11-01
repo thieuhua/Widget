@@ -73,7 +73,9 @@ public:
     Rect rect;
     Widget* parent = nullptr;
     std::unique_ptr<Layout> layout;
+    mutable Size meansureSize;
     std::vector<std::unique_ptr<Widget>> children;
+
 
     Widget() = default;
     Widget(Widget&& other) = default;
@@ -139,10 +141,10 @@ public:
 
     // hit test
     Widget* hitTest(int x, int y) {
+        int rx = x - (int)rect.x;
+        int ry = y - (int)rect.y;
         for (auto it = children.rbegin(); it != children.rend(); ++it) {
             Widget* child = it->get();
-            int rx = x - (int)child->rect.x;
-            int ry = y - (int)child->rect.y;
             if (child->rect.contains(rx, ry)) {
                 Widget* hit = child->hitTest(rx, ry);
                 return hit ? hit : child;
@@ -158,31 +160,31 @@ public:
         for (auto& c : children) c->collectFocusable(out);
     }
     Widget clone();
-    friend Widget Widget::clone();
 };
 
 
 Size Widget::measure(const LayoutConstraints& c) const{
     if (layout) {
-        return layout->measure(const_cast<Widget*>(this), c);
+        return meansureSize = layout->measure(const_cast<Widget*>(this), c);
     } else if (!children.empty()) {
         // container nhưng không có layout: chỉ cộng kích thước các children theo mặc định
-        Size s{};
+        Size s{rect.w, rect.h};
         for (const auto& child : children) {
             auto cs = child->measure(c);
             s.w = std::max(s.w, cs.w);
             s.h = std::max(s.h, cs.h);
         }
-        return s;
+        meansureSize = s;
     } else {
         // leaf widget: trả về size hiện tại hoặc mặc định
-        return {rect.w > 0 ? rect.w : 1, rect.h > 0 ? rect.h : 1};
+        meansureSize = {rect.w > 0 ? rect.w : 1, rect.h > 0 ? rect.h : 1};
     }
+    LOG("Widget measure w:" << meansureSize.w << " h:" << meansureSize.h);
+    return meansureSize;
 }
 
 void Widget::arrange(const Rect& bounds){
-    DEBUG(bounds.x)
-    DEBUG(bounds.y)
+    LOG ("Widget arrange in bounds x:" << bounds.x << " y:" << bounds.y << " w:" << bounds.w << " h:" << bounds.h);
     rect = bounds;
 
     if (layout) {

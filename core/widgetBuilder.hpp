@@ -17,14 +17,14 @@ public:
     WidgetBuilder& size(double w, double h) {
         rootWidget->rect.w = w;
         rootWidget->rect.h = h;
-        bool hasFixedWidth = true;
-        bool hasFixedHeight = true;
+        rootWidget->markLayoutDirty();
         return *this;
     }
 
     WidgetBuilder& position(double x, double y) {
         rootWidget->rect.x = x;
         rootWidget->rect.y = y;
+        rootWidget->markLayoutDirty();
         return *this;
     }
 
@@ -35,6 +35,13 @@ public:
 
     WidgetBuilder& layout(std::unique_ptr<Layout> l) {
         rootWidget->layout = std::move(l);
+        return *this;
+    }
+
+    template <typename LayoutT>
+    requires std::is_base_of_v<Layout, LayoutT>
+    WidgetBuilder& layout() {
+        rootWidget->layout = std::make_unique<LayoutT>();
         return *this;
     }
 
@@ -58,11 +65,11 @@ public:
         return *this;
     }
 
-    // Accept builder by lvalue. This allows passing temporaries AND named builders.
     WidgetBuilder& addChild(WidgetBuilder& childBuilder) {
         rootWidget->addChild(childBuilder.build());
         return *this;
     }
+    // Accept builder by lvalue.
     WidgetBuilder& addChild(WidgetBuilder&& builder) {
         rootWidget->addChild(builder.build());
         return *this;
@@ -72,6 +79,7 @@ public:
     // get final widget
     // ------------------------
     std::unique_ptr<Widget> build() {
+        if(!rootWidget) LOG("Warning: building a null widget");
         return std::move(rootWidget);
     }
 

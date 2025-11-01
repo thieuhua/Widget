@@ -7,16 +7,24 @@ class Renderer;
 
 class WidgetManager {
 public:
-    Widget* root;
+    std::unique_ptr<Widget> root;
     Renderer* renderer;
 
     Widget* hoverTarget = nullptr;
     Widget* activeTarget = nullptr;
     Widget* focusTarget = nullptr;
 
-    WidgetManager(Widget* r, Renderer* ren) : root(r), renderer(ren) {}
+    WidgetManager(std::unique_ptr<Widget> r, Renderer* ren) : root(std::move(r)), renderer(ren) {
+        LOG("WidgetManager created");
+        if(root) LOG("root widget exists");
+    }
+
+    ~WidgetManager() {
+        LOG("WidgetManager destruction");
+    }
 
     Size measure(const LayoutConstraints& c) {
+        LOG("gdfdf");
         return root->measure(c);
     }
 
@@ -39,8 +47,11 @@ public:
     }
 
     void onMouseDown(int x, int y, int button) {
+        LOG("WidgetManager onMouseDown at x:" << x << " y:" << y);
         Widget* hit = root->hitTest(x, y);
         if (hit) {
+            Rect bound = hit->rect;
+            LOG(" Hit widget at rect x:" << bound.x << " y:" << bound.y << " w:" << bound.w << " h:" << bound.h);
             activeTarget = hit;
             hit->onMouseDown(x, y, button);
             setFocus(hit);
