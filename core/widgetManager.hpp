@@ -1,3 +1,4 @@
+#pragma once
 #include "widget.hpp"
 // #include "renderer.hpp"
 #include <algorithm>
@@ -20,7 +21,6 @@ public:
     }
 
     void performLayout(LayoutConstraints rootConstraint) {
-        // use the renderer's current size for layout constraints
         Size desired = root->measure(rootConstraint);
         Rect rootRect { 0, 0, desired.w, desired.h };
         root->arrange(rootRect);

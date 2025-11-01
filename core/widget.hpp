@@ -4,6 +4,18 @@
 #include <memory>
 #include <limits>
 #include "layout.hpp"
+
+#ifdef SET_DEBUG
+    #include <iostream>
+    #define LOG(s) std::cerr << s << std::endl
+    #define LOG2(s, x)std::cerr << s<<":"<<x<<std::endl;
+    #define DEBUG(var) LOG2(#var, var)
+#else 
+    #define LOG(s)
+    #define LOG2(s, x)
+    #define DEBUG(var)
+#endif
+
 // class Layout {
 // public:
 //     virtual ~Layout() = default;
@@ -47,12 +59,15 @@ class IEventWidget {
 class Widget : public IEventWidget {
     friend WidgetBuilder;
 protected:
+    // config
     bool visible = true;
+    bool focusable = false;   // có thể nhận focus hay không
+    // state
     bool dirty = true;
     bool layoutDirty = true;
     bool hovered = false;
     bool focused = false;
-    bool focusable = false;   // có thể nhận focus hay không
+
 
 public:
     Rect rect;
@@ -60,7 +75,10 @@ public:
     std::unique_ptr<Layout> layout;
     std::vector<std::unique_ptr<Widget>> children;
 
+    Widget() = default;
+    Widget(Widget&& other) = default;
     virtual ~Widget() = default;
+
 
     void setVisible(bool v) { visible = v; }
     void setFocusable(bool v) { focusable = v; }
@@ -69,6 +87,15 @@ public:
 
     // --- Drawing & Updating ---
     virtual void draw(HDC hdc, int ox=0, int oy=0) {
+#ifdef SET_DEBUG
+        // debug: draw border:
+        HPEN hPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
+        HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
+        Rectangle(hdc, ox + rect.x, oy + rect.y, 
+                 ox + rect.x + rect.w, oy + rect.y + rect.h);
+        SelectObject(hdc, hOldPen);
+        DeleteObject(hPen);
+#endif
         for (auto &c : children) c->draw(hdc, ox + (int)rect.x, oy + (int)rect.y);
     }
 
@@ -82,9 +109,11 @@ public:
     void onFocus() { focused = true; markDirty(); }
     void onBlur() { focused = false; markDirty(); }
 
-
-    virtual Size Widget::measure(const LayoutConstraints& c) const;
-    virtual void Widget::arrange(const Rect& bounds);
+    Size GetSize() {
+        return {rect.w, rect.h};
+    }
+    virtual Size measure(const LayoutConstraints& c) const;
+    virtual void arrange(const Rect& bounds);
 
     // --- Utility ---
     void addChild(std::unique_ptr<Widget> w) {
@@ -128,6 +157,8 @@ public:
         if (focusable) out.push_back(this);
         for (auto& c : children) c->collectFocusable(out);
     }
+    Widget clone();
+    friend Widget Widget::clone();
 };
 
 
@@ -150,6 +181,8 @@ Size Widget::measure(const LayoutConstraints& c) const{
 }
 
 void Widget::arrange(const Rect& bounds){
+    DEBUG(bounds.x)
+    DEBUG(bounds.y)
     rect = bounds;
 
     if (layout) {
@@ -160,4 +193,22 @@ void Widget::arrange(const Rect& bounds){
             child->arrange(bounds); // mặc định full fill
         }
     }
+}
+
+Widget Widget::clone() {
+    Widget copy;
+    copy.rect = this->rect;
+    copy.visible = this->visible;
+    copy.focusable = this->focusable;
+    // Note: layout cloning is not handled here; assuming shallow copy or null
+    if (this->layout) {
+        // If layout has a clone method, it should be called here
+        // For now, we just set it to nullptr
+        copy.layout = nullptr; 
+    }
+    for (const auto& child : this->children) {
+        copy.children.push_back(std::make_unique<Widget>(child->clone()));
+        copy.children.back()->parent = &copy;
+    }
+    return copy;
 }

@@ -1,4 +1,4 @@
-#include "../widget.hpp"
+#include "../core/widget.hpp"
 #include <functional>
 
 class Button: public Widget {

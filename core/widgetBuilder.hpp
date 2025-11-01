@@ -17,6 +17,8 @@ public:
     WidgetBuilder& size(double w, double h) {
         rootWidget->rect.w = w;
         rootWidget->rect.h = h;
+        bool hasFixedWidth = true;
+        bool hasFixedHeight = true;
         return *this;
     }
 

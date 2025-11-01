@@ -1,7 +1,6 @@
 #include <string>
 #include <windows.h>
-#include "../widget.hpp"
-#include "../layout.hpp"
+#include "../core/widget.hpp"
 
 class Label : public Widget {
 public:
@@ -17,7 +16,7 @@ public:
     }
 
     // --- Measure size based on text ---
-    Size measure(const LayoutConstraints& c) override {
+    Size measure(const LayoutConstraints& c) const override {
         HDC hdc = GetDC(nullptr);
         HFONT oldFont = (HFONT)SelectObject(hdc, font ? font : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
         RECT r = {0,0,0,0};
