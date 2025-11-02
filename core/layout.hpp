@@ -40,7 +40,7 @@ public:
     // measure widget (and its children) under given constraints -> preferred size
     virtual Size measure(Widget* widget, const LayoutConstraints& c) = 0;
 
-    // arrange widget into given bounds (absolute coordinates for widget->rect)
+    // arrange widget into given bounds (relative coordinates for widget->rect)
     virtual void arrange(Widget* widget, const Rect& bounds) = 0;
 };
 

@@ -23,7 +23,7 @@
 //     // measure widget (and its children) under given constraints -> preferred size
 //     virtual Size measure(Widget* widget, const LayoutConstraints& c) = 0;
 
-//     // arrange widget into given bounds (absolute coordinates for widget->rect)
+//     // arrange widget into given bounds (relative coordinates for widget->rect)
 //     virtual void arrange(Widget* widget, const Rect& bounds) = 0;
 // };
 
@@ -51,7 +51,6 @@ class IEventWidget {
     // --- Scroll support ---
     virtual void onScroll(int delta) {}
 };
-
 
 
 // -------------------------------
@@ -90,12 +89,21 @@ public:
     // --- Drawing & Updating ---
     virtual void draw(HDC hdc, int ox=0, int oy=0) {
 #ifdef SET_DEBUG
-        // debug: draw border:
+        // debug: draw border only (no fill), 1px, inside widget rect
         HPEN hPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
-        HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
-        Rectangle(hdc, ox + rect.x, oy + rect.y, 
-                 ox + rect.x + rect.w, oy + rect.y + rect.h);
+        HGDIOBJ hOldPen = SelectObject(hdc, hPen);
+        HGDIOBJ hOldBrush = SelectObject(hdc, GetStockObject(NULL_BRUSH)); // no fill
+
+        // shrink rect by 1px inward so border is inside bounds
+        int left   = ox + (int)rect.x;
+        int top    = oy + (int)rect.y;
+        int right  = left + (int)rect.w - 1;
+        int bottom = top + (int)rect.h - 1;
+
+        Rectangle(hdc, left, top, right, bottom);
+
         SelectObject(hdc, hOldPen);
+        SelectObject(hdc, hOldBrush);
         DeleteObject(hPen);
 #endif
         for (auto &c : children) c->draw(hdc, ox + (int)rect.x, oy + (int)rect.y);
@@ -190,9 +198,10 @@ void Widget::arrange(const Rect& bounds){
     if (layout) {
         layout->arrange(this, bounds);
     } else {
+        Rect childBounds = {0, 0, bounds.w, bounds.h};
         // container nhưng không có layout: có thể đặt children trùng với rect cha
         for (auto& child : children) {
-            child->arrange(bounds); // mặc định full fill
+            child->arrange(childBounds); // mặc định full fill
         }
     }
 }
@@ -202,10 +211,7 @@ Widget Widget::clone() {
     copy.rect = this->rect;
     copy.visible = this->visible;
     copy.focusable = this->focusable;
-    // Note: layout cloning is not handled here; assuming shallow copy or null
     if (this->layout) {
-        // If layout has a clone method, it should be called here
-        // For now, we just set it to nullptr
         copy.layout = nullptr; 
     }
     for (const auto& child : this->children) {

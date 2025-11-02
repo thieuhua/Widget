@@ -3,7 +3,6 @@
 #include <functional>
 #include "widget.hpp"
 
-
 class WidgetBuilder {
     std::unique_ptr<Widget> rootWidget;
 
@@ -33,6 +32,21 @@ public:
         return *this;
     }
 
+    template <typename WidgetT = Widget, typename Fn>
+    requires (
+        std::is_base_of_v<Widget, WidgetT> &&
+        std::invocable<Fn, WidgetT&>
+    )
+    WidgetBuilder& init(Fn&& fn) {
+        WidgetT* w = dynamic_cast<WidgetT*>(rootWidget.get());
+        if (w) {
+            std::invoke(std::forward<Fn>(fn), *w);
+        } else {
+            LOG("WidgetBuilder::init: failed to cast to target WidgetT");
+        }
+        return *this;
+    }
+
     WidgetBuilder& layout(std::unique_ptr<Layout> l) {
         rootWidget->layout = std::move(l);
         return *this;
@@ -52,10 +66,14 @@ public:
             void onClick(int, int) override { if(f) f(this); }
         };
         auto cbWidget = std::make_unique<CallbackWidget>(cb);
-        cbWidget->rect = rootWidget->rect;
+        cbWidget->rect = {0, 0, rootWidget->rect.w, rootWidget->rect.h};
+        if(cbWidget->rect.w ==0 || cbWidget->rect.h==0) {
+            LOG("Warning: onClick assigned to a widget with zero size");
+        }
         rootWidget->addChild(std::move(cbWidget));
         return *this;
     }
+
 
     // ------------------------
     // add child builder
@@ -75,6 +93,7 @@ public:
         return *this;
     }
 
+
     // ------------------------
     // get final widget
     // ------------------------
@@ -83,10 +102,32 @@ public:
         return std::move(rootWidget);
     }
 
+
     // ------------------------
     // helper static factory
     // ------------------------
     static WidgetBuilder create() { return WidgetBuilder(); }
     static WidgetBuilder create(std::unique_ptr<Widget> w) { return WidgetBuilder(std::move(w)); }
+
+    template <typename WidgetT, typename... Args>
+    requires std::is_base_of_v<Widget, WidgetT>
+    static WidgetBuilder create(Args&&... args) {
+        return WidgetBuilder(std::make_unique<WidgetT>(std::forward<Args>(args)...));
+    }
+    
+
+    //default with layout
+    template <typename LayoutT>
+    requires std::is_base_of_v<Layout, LayoutT>
+    static WidgetBuilder create(){
+        return std::move(WidgetBuilder().layout<LayoutT>());
+    }
 };
 
+    template <typename T = Widget, typename... Args>
+    auto WB(Args&&... args) {
+        if constexpr (std::is_same_v<T, Widget>) 
+            return WidgetBuilder::create();
+        else
+        return WidgetBuilder::create<T>(std::forward<Args>(args)...);
+}
