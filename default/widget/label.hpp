@@ -4,6 +4,7 @@
 #include <cmath>
 #include <windows.h>
 #include "../core/widget.hpp"
+#include "../style.hpp"
 
 class Label : public Widget {
 public:
@@ -37,6 +38,7 @@ public:
     Label(const std::wstring& t)
         : text(t)
     {
+        focusable = false; // labels are not focusable by default
         createFont();
     }
 

@@ -1,4 +1,4 @@
-#include "../widget.hpp"
+#include "../core/widget.hpp"
 
 class Panel : public Widget {
 protected:
