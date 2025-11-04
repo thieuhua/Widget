@@ -33,6 +33,9 @@ struct Size {
 
 class Widget;
 
+
+
+
 class Layout {
 public:
     virtual ~Layout() = default;

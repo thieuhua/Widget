@@ -12,8 +12,10 @@ public:
         Widget* widget;
         Dock dock;
     };
-
     std::vector<DockChild> dockChildren;
+
+
+    
 
     void addDockedWidget(Widget* w, Dock d) {
         dockChildren.push_back({w,d});
@@ -67,3 +69,38 @@ public:
         }
     }
 };
+
+#ifdef WIDGET_BUILDER_HPP
+
+// class DockBuilder: public WidgetBuilder {
+//     Dock DockDefault = Dock::Top;
+//     using WidgetBuilder::WidgetBuilder;
+
+//     WidgetBuilder& addChild(std::unique_ptr<Widget> child, Dock d = Dock::Top) {
+//         __impl(child.get(), d);
+//         rootWidget->addChild(std::move(child));
+//         return *this;
+//     }
+
+//     WidgetBuilder& addChild(WidgetBuilder& childBuilder, Dock d = Dock::Top) {
+//         rootWidget->addChild(childBuilder.build());
+//         return *this;
+//     }
+//     // Accept builder by lvalue.
+//     WidgetBuilder& addChild(WidgetBuilder&& builder) {
+//         rootWidget->addChild(builder.build());
+//         return *this;
+//     }
+// private:
+//     void __impl(Widget* child, Dock d);
+// };
+
+// template <>
+// auto WB<DockLayout>(){
+//     return DockBuilder();
+// }
+
+
+
+
+#endif

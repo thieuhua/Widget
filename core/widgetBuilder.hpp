@@ -1,9 +1,12 @@
 #pragma once
+#ifndef WIDGET_BUILDER_HPP
+#define WIDGET_BUILDER_HPP
 #include <memory>
 #include <functional>
 #include "widget.hpp"
 
 class WidgetBuilder {
+protected:
     std::unique_ptr<Widget> rootWidget;
 
 public:
@@ -122,12 +125,16 @@ public:
     static WidgetBuilder create(){
         return std::move(WidgetBuilder().layout<LayoutT>());
     }
+
 };
 
-    template <typename T = Widget, typename... Args>
-    auto WB(Args&&... args) {
-        if constexpr (std::is_same_v<T, Widget>) 
-            return WidgetBuilder::create();
-        else
-        return WidgetBuilder::create<T>(std::forward<Args>(args)...);
+template <typename T = Widget, typename... Args>
+auto WB(Args&&... args) {
+    if constexpr (std::is_same_v<T, Widget>) 
+        return WidgetBuilder::create();
+    else
+    return WidgetBuilder::create<T>(std::forward<Args>(args)...);
 }
+
+
+#endif // WIDGET_BUILDER_HPP

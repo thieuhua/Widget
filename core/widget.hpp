@@ -140,7 +140,7 @@ public:
     bool isDirty() const { return dirty; }
     void clearDirty() { dirty = false; for (auto &c : children) c->clearDirty(); }
 
-    void markLayoutDirty() {
+    virtual void markLayoutDirty() {
         layoutDirty = true;
         if (parent) parent->markLayoutDirty();
     }
@@ -220,3 +220,4 @@ Widget Widget::clone() {
     }
     return copy;
 }
+
