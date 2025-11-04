@@ -11,12 +11,12 @@ public:
 };
 
 // vi du trien khai cho Widget:
-class Widget
-{
-public:
-    Widget() = default;
-    Widget(Widget&& w) = default;
-};
+// class Widget
+// {
+// public:
+//    Widget() = default;
+//    Widget(Widget&& w) = default;
+// };
 
 
 // class Builder {
